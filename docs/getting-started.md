@@ -3,14 +3,14 @@
 The crate declares Rust 1.96.0 as its compiler compatibility baseline. Default
 features provide the complete documented extraction API.
 
-With all common modules enabled:
+With all common API families enabled:
 
 ```toml
 [dependencies]
 http-extract = "0.1"
 ```
 
-For a smaller dependency surface, disable defaults and enable only the modules
+For a smaller dependency surface, disable defaults and enable only the features
 you use:
 
 ```toml
@@ -26,10 +26,7 @@ wrappers that only delegate through `request.headers()`:
 
 ```rust
 use http::Request;
-use http_extract::{
-    authority::extract_request_authority,
-    content_type::extract_request_content_type,
-};
+use http_extract::{extract_request_authority, extract_request_content_type};
 
 let request = Request::builder()
     .uri("https://example.com/items")

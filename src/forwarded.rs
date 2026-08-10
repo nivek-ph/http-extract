@@ -3,7 +3,7 @@
 //! [`extract_header_forwarded_for`] implements the crate's deliberately narrow
 //! use of the standardized field: every field element must contain a usable
 //! `for=` IP address, and the resulting chain remains untrusted. Effective
-//! A feature-gated `client_ip::extract_client_ip` convenience can select from
+//! A feature-gated [`crate::extract_client_ip`] convenience can select from
 //! this and other fields, but that selection does not establish trust.
 //!
 //! The field grammar is defined by [RFC 7239, Section 4], the `for` parameter

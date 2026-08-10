@@ -11,7 +11,7 @@ non-text values fail without including the value in the error.
 
 ```rust
 use http::Request;
-use http_extract::request_id::extract_request_request_id;
+use http_extract::extract_request_request_id;
 
 let request = Request::builder()
     .header("request-id", "fallback")

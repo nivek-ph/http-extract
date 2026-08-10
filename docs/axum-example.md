@@ -3,7 +3,7 @@
 The repository's `axum-demo` example demonstrates the library at an Axum request
 boundary while keeping the core framework-independent. Axum supplies the TCP
 peer through `ConnectInfo<SocketAddr>`;
-`client_ip::extract_axum_peer_address` and `extract_axum_peer_ip` read that
+`extract_axum_peer_address` and `extract_axum_peer_ip` read that
 request extension, while Header-derived client IP values remain separate raw
 assertions.
 

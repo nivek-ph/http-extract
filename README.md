@@ -17,7 +17,7 @@ Default features provide all common extractors:
 http-extract = "0.1"
 ```
 
-Select only the modules an application uses:
+Select only the API families an application uses:
 
 ```toml
 [dependencies]
@@ -35,7 +35,7 @@ Header functions contain the parsing logic. Matching Request functions are
 convenience wrappers that delegate through `request.headers()`.
 
 
-| Module              | Purpose                                                          |
+| Feature/API family  | Purpose                                                          |
 | ------------------- | ---------------------------------------------------------------- |
 | `api_key`           | `X-API-Key`, then `Api-Key` fallback                             |
 | `authority`         | URI authority and strict `Host` extraction                       |
@@ -49,12 +49,12 @@ convenience wrappers that delegate through `request.headers()`.
 | `header`            | Strict singular-field helpers and append-without-replace utility |
 
 
-See the [module and API map](https://github.com/nivek-ph/http-extract/blob/main/docs/api-map.md)
+See the [feature and API map](https://github.com/nivek-ph/http-extract/blob/main/docs/api-map.md)
 for exact function names and return types.
 
 ## Client IP boundary
 
-`client_ip::extract_client_ip` checks these Header sources in order:
+`extract_client_ip` checks these Header sources in order:
 
 1. RFC 7239 `Forwarded`;
 2. `X-Forwarded-For`;
@@ -84,7 +84,7 @@ Default features are `api-key`, `authority`, `authorization`, `client-ip`,
 - `client-ip` enables its Header parsing dependencies;
 - `content-type` enables the optional `mime` dependency;
 - non-default `axum` enables `client-ip` and the optional Axum dependency;
-- `--no-default-features` leaves only `Error` and the generic `header` module.
+- `--no-default-features` leaves only `Error` and the generic Header helpers.
 
 The default normal dependency tree does not include Axum, Tower, Tokio,
 tracing, or OpenTelemetry. See the [feature guide](https://github.com/nivek-ph/http-extract/blob/main/docs/features.md)

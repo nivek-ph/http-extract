@@ -55,6 +55,20 @@ http = "1"
 mime = { version = "0.3", optional = true }
 thiserror = "2"
 
+[dev-dependencies]
+axum = { version = "0.8.9", default-features = false, features = [
+    "http1",
+    "json",
+    "tokio",
+] }
+serde_json = "1"
+tokio = { version = "1.48", features = ["macros", "net", "rt-multi-thread"] }
+tower = { version = "0.5", features = ["util"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+    "fmt",
+] }
+
 [[example]]
 name = "axum-demo"
 path = "examples/axum/main.rs"
@@ -67,17 +81,3 @@ required-features = [
     "content-type",
     "request-id",
 ]
-
-[dev-dependencies]
-axum = { version = "0.8.9", default-features = false, features = [
-    "http1",
-    "json",
-    "tokio",
-] }
-serde_json = "1"
-tokio = { version = "1.48", features = ["macros", "net", "rt-multi-thread"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", default-features = false, features = [
-    "fmt",
-] }
-tower = { version = "0.5", features = ["util"] }

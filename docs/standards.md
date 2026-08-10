@@ -59,7 +59,7 @@ The declared Rust baseline is Rust 1.96.0, matching `Cargo.toml`'s
 statement only; the core remains synchronous and framework-independent, and no
 broader runtime compatibility is implied.
 
-Default features enable all documented extraction modules. Consumers using
-`default-features = false` can select only the modules they need. The exact
+Default features enable all documented extraction API families. Consumers using
+`default-features = false` can select only the features they need. The exact
 feature list, dependency relationships, and copyable configuration are in
 [Cargo features](features.md).

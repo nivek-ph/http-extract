@@ -19,7 +19,7 @@ features enable the complete common API: `api-key`, `authority`,
 | `x-forwarded` | Raw X-Forwarded-For and X-Forwarded-Proto parsing |
 
 `client-ip` enables `client-ip-headers`, `forwarded`, and `x-forwarded` because
-its selectors use those parsing modules. The crate-wide `Error` and generic
+its selectors use those parsing APIs. The crate-wide `Error` and generic
 `header` utilities remain available with no default features.
 
 Useful checks for consumers and contributors:

@@ -6,7 +6,7 @@
 //! `X-Real-IP` are vendor or de facto conventions, not IETF standards.
 //!
 //! These values are untrusted: this module does not authenticate a proxy or
-//! apply a trust policy. The feature-gated `client_ip::extract_client_ip`
+//! apply a trust policy. The feature-gated [`crate::extract_client_ip`]
 //! convenience includes selected fields, but its output remains untrusted.
 //! Applications must decide whether a specific field is trustworthy for their
 //! deployment. Every extractor treats
@@ -19,14 +19,25 @@ use http::{HeaderMap, HeaderName, Request};
 
 use crate::{Error, header::extract_single_header_text};
 
-pub(crate) const CF_CONNECTING_IP: HeaderName = HeaderName::from_static("cf-connecting-ip");
-pub(crate) const CLOUDFRONT_VIEWER_ADDRESS: HeaderName =
+/// The `CF-Connecting-IP` field name.
+pub const CF_CONNECTING_IP: HeaderName = HeaderName::from_static("cf-connecting-ip");
+
+/// The `CloudFront-Viewer-Address` field name.
+pub const CLOUDFRONT_VIEWER_ADDRESS: HeaderName =
     HeaderName::from_static("cloudfront-viewer-address");
-pub(crate) const FLY_CLIENT_IP: HeaderName = HeaderName::from_static("fly-client-ip");
-pub(crate) const TRUE_CLIENT_IP: HeaderName = HeaderName::from_static("true-client-ip");
-pub(crate) const X_ENVOY_EXTERNAL_ADDRESS: HeaderName =
+
+/// The `Fly-Client-IP` field name.
+pub const FLY_CLIENT_IP: HeaderName = HeaderName::from_static("fly-client-ip");
+
+/// The `True-Client-IP` field name.
+pub const TRUE_CLIENT_IP: HeaderName = HeaderName::from_static("true-client-ip");
+
+/// The `X-Envoy-External-Address` field name.
+pub const X_ENVOY_EXTERNAL_ADDRESS: HeaderName =
     HeaderName::from_static("x-envoy-external-address");
-pub(crate) const X_REAL_IP: HeaderName = HeaderName::from_static("x-real-ip");
+
+/// The `X-Real-IP` field name.
+pub const X_REAL_IP: HeaderName = HeaderName::from_static("x-real-ip");
 
 /// Extract the raw, untrusted IP asserted by `CF-Connecting-IP`.
 ///

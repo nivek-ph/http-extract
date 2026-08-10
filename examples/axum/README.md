@@ -4,8 +4,8 @@ This example shows how an Axum handler can call the framework-independent
 `http-extract` functions directly. The handler extracts:
 
 - the transport peer address and IP from Axum's request extensions using
-  `client_ip::extract_axum_peer_address` and `extract_axum_peer_ip`;
-- a best-effort client IP using `client_ip::extract_client_ip`;
+  `extract_axum_peer_address` and `extract_axum_peer_ip`;
+- a best-effort client IP using `extract_client_ip`;
 - request authority, request ID, and Content-Type;
 - masked Authorization, API-key, and cookie values plus cookie counts.
 

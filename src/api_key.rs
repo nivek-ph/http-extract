@@ -10,8 +10,11 @@ use http::{HeaderMap, HeaderName, Request};
 
 use crate::{Error, header::extract_single_header_text};
 
-const X_API_KEY: HeaderName = HeaderName::from_static("x-api-key");
-const API_KEY: HeaderName = HeaderName::from_static("api-key");
+/// The preferred `X-API-Key` field name.
+pub const X_API_KEY: HeaderName = HeaderName::from_static("x-api-key");
+
+/// The fallback `Api-Key` field name.
+pub const API_KEY: HeaderName = HeaderName::from_static("api-key");
 
 /// Extract an API key from request fields.
 ///

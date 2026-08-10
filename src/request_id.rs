@@ -9,8 +9,11 @@ use http::{HeaderMap, HeaderName, Request};
 
 use crate::{Error, header::extract_single_header_text};
 
-const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
-const REQUEST_ID: HeaderName = HeaderName::from_static("request-id");
+/// The preferred `X-Request-Id` field name.
+pub const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
+
+/// The fallback `Request-Id` field name.
+pub const REQUEST_ID: HeaderName = HeaderName::from_static("request-id");
 
 /// Extract a request ID from request fields.
 ///

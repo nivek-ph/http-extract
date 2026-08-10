@@ -8,15 +8,9 @@ use axum::{
     routing::get,
 };
 use http_extract::{
-    Error,
-    api_key::extract_header_api_key,
-    authority::extract_request_authority,
-    authorization::extract_header_authorization,
-    client_ip::{extract_axum_peer_address, extract_axum_peer_ip, extract_client_ip},
-    content_type::extract_header_content_type,
-    forwarded::FORWARDED,
-    request_id::extract_header_request_id,
-    x_forwarded::X_FORWARDED_FOR,
+    Error, FORWARDED, X_FORWARDED_FOR, extract_axum_peer_address, extract_axum_peer_ip,
+    extract_client_ip, extract_header_api_key, extract_header_authorization,
+    extract_header_content_type, extract_header_request_id, extract_request_authority,
 };
 use serde_json::{Value, json};
 
