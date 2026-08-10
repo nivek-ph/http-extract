@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/nivek-ph/http-extract/compare/v0.1.1...v0.1.2) - 2026-08-10
+
+### Added
+
+- add request socket address extractors ([#6](https://github.com/nivek-ph/http-extract/pull/6))
+
 ### Added
 
 - Add request-extension helpers for directly stored `SocketAddr` values and their IP components.
