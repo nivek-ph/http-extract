@@ -101,14 +101,14 @@ fn mask_sensitive(value: &str) -> String {
 }
 
 fn selected_client_source(headers: &http::HeaderMap) -> Option<&'static str> {
-    if headers.contains_key("cf-connecting-ip") {
-        Some("cf-connecting-ip")
-    } else if headers.contains_key("x-real-ip") {
-        Some("x-real-ip")
-    } else if headers.contains_key(&FORWARDED) {
+    if headers.contains_key(&FORWARDED) {
         Some("forwarded")
     } else if headers.contains_key(&X_FORWARDED_FOR) {
         Some("x-forwarded-for")
+    } else if headers.contains_key("x-real-ip") {
+        Some("x-real-ip")
+    } else if headers.contains_key("cf-connecting-ip") {
+        Some("cf-connecting-ip")
     } else {
         None
     }
@@ -197,8 +197,8 @@ mod tests {
         let context = response_json(build_app().oneshot(request).await.unwrap()).await;
         assert_eq!(context["peer_address"], "127.0.0.1:43210");
         assert_eq!(context["peer_ip"], "127.0.0.1");
-        assert_eq!(context["client_ip"], "198.51.100.9");
-        assert_eq!(context["client_source"], "x-real-ip");
+        assert_eq!(context["client_ip"], "127.0.0.2");
+        assert_eq!(context["client_source"], "x-forwarded-for");
         assert_eq!(context["authority"], "api.example.test");
         assert_eq!(context["request_id"], "request-123");
         assert_eq!(context["content_type"], "application/json");
