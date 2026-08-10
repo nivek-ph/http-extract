@@ -7,7 +7,7 @@ With all common modules enabled:
 
 ```toml
 [dependencies]
-http-extract = "0.1.0-alpha.0"
+http-extract = "0.1"
 ```
 
 For a smaller dependency surface, disable defaults and enable only the modules
@@ -15,7 +15,7 @@ you use:
 
 ```toml
 [dependencies]
-http-extract = { version = "0.1.0-alpha.0", default-features = false, features = [
+http-extract = { version = "0.1", default-features = false, features = [
   "authority",
   "content-type",
 ] }
