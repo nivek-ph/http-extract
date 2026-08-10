@@ -247,6 +247,24 @@ mod tests {
 
     #[cfg(feature = "axum")]
     #[test]
+    fn request_socket_and_axum_peer_extractors_are_independent() {
+        let request_peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
+        let axum_peer: SocketAddr = "198.51.100.10:8080".parse().unwrap();
+        let mut request = http::Request::new(());
+
+        request.extensions_mut().insert(request_peer);
+        request
+            .extensions_mut()
+            .insert(axum::extract::ConnectInfo(axum_peer));
+
+        assert_eq!(extract_request_socket_address(&request), Some(request_peer));
+        assert_eq!(extract_request_socket_ip(&request), Some(request_peer.ip()));
+        assert_eq!(extract_axum_peer_address(&request), Some(axum_peer));
+        assert_eq!(extract_axum_peer_ip(&request), Some(axum_peer.ip()));
+    }
+
+    #[cfg(feature = "axum")]
+    #[test]
     fn axum_peer_address_reads_connect_info_extension() {
         let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
         let mut request = http::Request::new(());
