@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add request-extension helpers for directly stored `SocketAddr` values and their IP components.
+
+### Removed
+
+- Remove `extract_peer_address` and `extract_peer_ip`; callers with an out-of-band `SocketAddr`
+  can use the value directly or call its `ip()` method.
+
 ## [0.1.1](https://github.com/nivek-ph/http-extract/releases/tag/v0.1.1) - 2026-08-10
 
 ### Changed

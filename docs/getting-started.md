@@ -44,8 +44,10 @@ assert_eq!(
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-A socket peer is not an HTTP field. Obtain it from the server adapter before
-calling `extract_peer_ip`. With the non-default `axum` feature,
+A socket peer is not an HTTP field. Obtain it from the server adapter. If the
+adapter stores a `SocketAddr` directly in request extensions, use
+`extract_request_socket_address` or
+`extract_request_socket_ip`. With the non-default `axum` feature,
 `extract_axum_peer_address` reads an existing `ConnectInfo<SocketAddr>` request
 extension, while `extract_axum_peer_ip` returns its IP component; neither
 fabricates that fact. The

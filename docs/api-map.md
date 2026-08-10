@@ -16,8 +16,9 @@ from the crate root, so applications import
 | `x_forwarded` | `extract_header_x_forwarded_for`, `extract_header_x_forwarded_proto` | matching Request functions | IP or scheme vectors |
 | `client_ip_headers` | one `extract_header_*` function per common provider/proxy field | matching Request functions | `Option<IpAddr>` |
 
-`extract_peer_address` and `extract_peer_ip` accept an out-of-band
-`SocketAddr`. `extract_client_ip` uses the library's documented
+`extract_request_socket_address` and
+`extract_request_socket_ip` read a `SocketAddr` stored directly in request
+extensions. `extract_client_ip` uses the library's documented
 default Header order; `extract_client_ip_with_headers` accepts an explicit
 ordered slice of `ClientIpHeader` values. Both Header selectors return raw,
 untrusted assertions.
