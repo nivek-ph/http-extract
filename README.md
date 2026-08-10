@@ -69,8 +69,8 @@ selection. A malformed first-present source fails instead of falling through.
 `extract_socket_ip` reads Axum `ConnectInfo<SocketAddr>` when available, then a
 direct `SocketAddr` request extension; it never reads Headers.
 `extract_proxy_client_ip` checks the Header order above and falls back to that
-peer only when all supported Headers are absent. Header-derived values remain
-untrusted unless the deployment enforces a trusted-proxy boundary.
+peer only when all Headers in `CLIENT_IP_HEADERS` are absent. Header-derived
+values remain untrusted unless the deployment enforces a trusted-proxy boundary.
 
 Read the [client IP trust boundary](https://github.com/nivek-ph/http-extract/blob/main/docs/trusted-proxies.md)
 before using a Header-derived IP for authorization, rate limiting, or auditing.

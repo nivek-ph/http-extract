@@ -24,7 +24,8 @@ extensions. `extract_socket_ip` prefers Axum `ConnectInfo<SocketAddr>` when the
 default Header order; `extract_client_ip_with_headers` accepts an explicit
 ordered slice of `ClientIpHeader` values. Both Header selectors return raw,
 untrusted assertions. `extract_proxy_client_ip` applies the default Header
-order and uses `extract_socket_ip` only when every supported Header is absent.
+order and uses `extract_socket_ip` only when every Header in
+`CLIENT_IP_HEADERS` is absent.
 
 With the non-default `axum` feature,
 `extract_axum_socket_address(&Request<B>)` and

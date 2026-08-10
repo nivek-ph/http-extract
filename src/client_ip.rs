@@ -240,9 +240,9 @@ pub fn extract_client_ip_with_headers(
 /// Extract a proxy-aware client IP, falling back to the socket peer.
 ///
 /// This first applies [`extract_client_ip`] to the request Headers. Only when
-/// every supported Header is absent does it fall back to [`extract_socket_ip`].
-/// A malformed, duplicate, or non-text first-present Header returns an error
-/// without consulting the peer.
+/// every Header in [`CLIENT_IP_HEADERS`] is absent does it fall back to
+/// [`extract_socket_ip`]. A malformed, duplicate, or non-text first-present
+/// Header returns an error without consulting the peer.
 ///
 /// Header-derived addresses remain raw assertions. Use this function only
 /// when the deployment restricts access to trusted proxies that remove or

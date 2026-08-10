@@ -56,8 +56,8 @@ sources without reading Headers.
 The Header-based `extract_client_ip` convenience does not use or authenticate
 the transport peer, so its result remains untrusted. For an explicitly
 trusted-proxy deployment, `extract_proxy_client_ip` checks the default Header
-order and falls back to `extract_socket_ip` only when all supported Headers are
-absent. It does not verify the proxy trust boundary.
+order and falls back to `extract_socket_ip` only when all Headers in
+`CLIENT_IP_HEADERS` are absent. It does not verify the proxy trust boundary.
 
 Before deployment, review [Standards and compatibility](standards.md),
 [Cargo features](features.md), and the [client IP trust boundary](trusted-proxies.md).
