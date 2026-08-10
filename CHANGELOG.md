@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/nivek-ph/http-extract/releases/tag/v0.1.1) - 2026-08-10
+
 ### Changed
 
 - Expose all public extraction APIs directly from the crate root.

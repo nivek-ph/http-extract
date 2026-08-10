@@ -2,14 +2,16 @@ name: Release-plz
 
 on:
   push:
-    branches: [main]
-
-permissions:
-  contents: read
+    branches:
+      - main
+    paths-ignore:
+      - "examples/**"
+      - "tests/**"
 
 jobs:
-  release:
-    name: Publish release
+  # Release unpublished packages.
+  release-plz-release:
+    name: Release-plz release
     if: ${{ github.repository_owner == 'nivek-ph' }}
     runs-on: ubuntu-latest
     permissions:
@@ -27,15 +29,16 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.96.0
-      - name: Publish eligible releases
+      - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  release-pr:
-    name: Prepare release PR
+  # Create a PR with the new versions and changelog, preparing the next release.
+  release-plz-pr:
+    name: Release-plz PR
     if: ${{ github.repository_owner == 'nivek-ph' }}
     runs-on: ubuntu-latest
     permissions:
@@ -54,7 +57,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.96.0
-      - name: Prepare release PR
+      - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
           command: release-pr
