@@ -66,11 +66,11 @@ precedence or trust policy. `extract_client_ip_with_headers` accepts an
 explicit ordered slice of `ClientIpHeader` values for deployment-specific
 selection. A malformed first-present source fails instead of falling through.
 
-Both functions return raw Header assertions. Security-sensitive consumers such
-as rate limiters should first verify the socket peer and use only a Header that
-a trusted proxy overwrites. `extract_peer_ip` returns an out-of-band socket
-peer; with the optional `axum` feature, `extract_axum_peer_address` and
-`extract_axum_peer_ip` read Axum's `ConnectInfo<SocketAddr>` extension.
+`extract_socket_ip` reads Axum `ConnectInfo<SocketAddr>` when available, then a
+direct `SocketAddr` request extension; it never reads Headers.
+`extract_proxy_client_ip` checks the Header order above and falls back to that
+peer only when all Headers in `CLIENT_IP_HEADERS` are absent. Header-derived
+values remain untrusted unless the deployment enforces a trusted-proxy boundary.
 
 Read the [client IP trust boundary](https://github.com/nivek-ph/http-extract/blob/main/docs/trusted-proxies.md)
 before using a Header-derived IP for authorization, rate limiting, or auditing.

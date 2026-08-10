@@ -16,15 +16,20 @@ from the crate root, so applications import
 | `x_forwarded` | `extract_header_x_forwarded_for`, `extract_header_x_forwarded_proto` | matching Request functions | IP or scheme vectors |
 | `client_ip_headers` | one `extract_header_*` function per common provider/proxy field | matching Request functions | `Option<IpAddr>` |
 
-`extract_peer_address` and `extract_peer_ip` accept an out-of-band
-`SocketAddr`. `extract_client_ip` uses the library's documented
+`extract_request_socket_address` and
+`extract_request_socket_ip` read a `SocketAddr` stored directly in request
+extensions. `extract_socket_ip` prefers Axum `ConnectInfo<SocketAddr>` when the
+`axum` feature is enabled, then falls back to the direct extension.
+`extract_client_ip` uses the library's documented
 default Header order; `extract_client_ip_with_headers` accepts an explicit
 ordered slice of `ClientIpHeader` values. Both Header selectors return raw,
-untrusted assertions.
+untrusted assertions. `extract_proxy_client_ip` applies the default Header
+order and uses `extract_socket_ip` only when every Header in
+`CLIENT_IP_HEADERS` is absent.
 
 With the non-default `axum` feature,
-`extract_axum_peer_address(&Request<B>)` and
-`extract_axum_peer_ip(&Request<B>)` read only the `ConnectInfo<SocketAddr>`
+`extract_axum_socket_address(&Request<B>)` and
+`extract_axum_socket_ip(&Request<B>)` read only the `ConnectInfo<SocketAddr>`
 request extension and return `None` when it is absent. They do not inspect
 forwarding Headers.
 

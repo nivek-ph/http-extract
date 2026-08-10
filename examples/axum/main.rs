@@ -8,7 +8,7 @@ use axum::{
     routing::get,
 };
 use http_extract::{
-    Error, FORWARDED, X_FORWARDED_FOR, extract_axum_peer_address, extract_axum_peer_ip,
+    Error, FORWARDED, X_FORWARDED_FOR, extract_axum_socket_address, extract_axum_socket_ip,
     extract_client_ip, extract_header_api_key, extract_header_authorization,
     extract_header_content_type, extract_header_request_id, extract_request_authority,
 };
@@ -40,7 +40,7 @@ fn build_app() -> Router {
 }
 
 async fn request_context(request: Request) -> Result<Json<Value>, Response> {
-    let peer: SocketAddr = extract_axum_peer_address(&request).ok_or_else(|| {
+    let peer: SocketAddr = extract_axum_socket_address(&request).ok_or_else(|| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             "connection information unavailable\n",
@@ -61,7 +61,7 @@ async fn request_context(request: Request) -> Result<Json<Value>, Response> {
 
     let context = json!({
         "peer_address": peer.to_string(),
-        "peer_ip": extract_axum_peer_ip(&request).map(|ip| ip.to_string()),
+        "peer_ip": extract_axum_socket_ip(&request).map(|ip| ip.to_string()),
         "client_ip": client_ip.map(|address| address.to_string()),
         "client_source": client_ip.and_then(|_| selected_client_source(headers)),
         "authority": extract_request_authority(&request)
@@ -141,12 +141,12 @@ mod tests {
     fn extracts_axum_peer_from_request_extensions() {
         let request = request_with_peer("/").body(()).unwrap();
         assert_eq!(
-            extract_axum_peer_address(&request),
+            extract_axum_socket_address(&request),
             Some("127.0.0.1:43210".parse().unwrap())
         );
 
         let request = Request::new(());
-        assert_eq!(extract_axum_peer_address(&request), None);
+        assert_eq!(extract_axum_socket_address(&request), None);
     }
 
     #[test]

@@ -29,8 +29,15 @@ Neither selector receives the transport peer or trusted CIDRs. The returned IP
 is therefore raw and untrusted. Before using it for authorization, rate
 limiting, or audit decisions, restrict the application listener to controlled
 proxies and ensure that the selected field is overwritten according to the
-deployment's policy. Use `extract_peer_ip` instead when the actual socket peer
-is the desired fact.
+deployment's policy.
+
+`extract_proxy_client_ip(request)` composes the default Header selection with
+peer fallback. It calls `extract_socket_ip(request)` only when every supported
+Header is absent; an invalid first-present Header remains an error. The peer
+helper prefers Axum `ConnectInfo<SocketAddr>` when the feature is enabled and
+then a direct `SocketAddr` extension. Neither helper verifies trusted proxy
+addresses or CIDRs. Use `extract_socket_ip` alone when the actual socket peer is
+the desired fact.
 
 `extract_header_forwarded_for` remains deliberately strict: the field must be
 singular and every element must contain a usable IP `for=` value. Missing,

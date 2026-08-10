@@ -1,12 +1,19 @@
-//! Best-effort extraction of raw client IP assertions.
+//! Peer extraction and proxy-aware client IP selection.
 //!
-//! [`extract_client_ip`] uses [`CLIENT_IP_HEADERS`], while
+//! [`extract_request_socket_address`] and [`extract_request_socket_ip`] read a
+//! directly stored [`SocketAddr`] request extension. With the `axum` feature,
+//! [`extract_axum_socket_address`] and [`extract_axum_socket_ip`] read Axum's
+//! `ConnectInfo<SocketAddr>` extension. [`extract_socket_ip`] composes those
+//! sources without inspecting HTTP fields.
+//!
+//! Separately, [`extract_client_ip`] uses [`CLIENT_IP_HEADERS`], while
 //! [`extract_client_ip_with_headers`] lets callers choose the fields and their
-//! order explicitly using [`ClientIpHeader`] values.
-//! Both functions only inspect HTTP fields. They cannot authenticate the
-//! sender, so their results remain raw and untrusted. Applications must
-//! establish the relevant proxy or CDN trust boundary before using a result
-//! for authorization, abuse prevention, or rate limiting.
+//! order explicitly using [`ClientIpHeader`] values. [`extract_proxy_client_ip`]
+//! uses the default Header order and falls back to [`extract_socket_ip`].
+//! The Header selectors cannot authenticate the sender, so Header-derived
+//! results remain raw and untrusted. Applications must establish the relevant
+//! proxy or CDN trust boundary before using a result for authorization, abuse
+//! prevention, or rate limiting.
 //!
 //! RFC 7239 standardizes `Forwarded`; `X-Forwarded-For` and the single-value
 //! provider/proxy fields are de facto conventions rather than IETF standards.
@@ -121,35 +128,23 @@ impl TryFrom<&str> for ClientIpHeader {
     }
 }
 
-/// The default Header lookup order used by [`extract_client_ip`].
+/// Extract a `SocketAddr` stored directly in a request extension.
 ///
-/// The standardized `Forwarded` field is checked first, followed by the de
-/// facto `X-Forwarded-For`, `X-Real-IP`, and `CF-Connecting-IP` fields. The
-/// first present source wins. This standard-first order is a library
-/// convention, not an RFC-defined precedence or trust policy.
-pub const CLIENT_IP_HEADERS: &[ClientIpHeader] = &[
-    ClientIpHeader::Forwarded,
-    ClientIpHeader::XForwardedFor,
-    ClientIpHeader::XRealIp,
-    ClientIpHeader::CfConnectingIp,
-];
-
-/// Return the IP address of a transport peer supplied out-of-band by an adapter.
-///
-/// This is a direct conversion from [`SocketAddr`] to [`IpAddr`]. It does not
-/// read HTTP fields or apply a proxy policy. The caller is responsible for
-/// supplying the actual connection peer rather than a header-derived address.
-pub const fn extract_peer_ip(peer: SocketAddr) -> IpAddr {
-    extract_peer_address(peer).ip()
+/// A request does not inherently contain this network fact. This function
+/// only reads a `SocketAddr` previously inserted by a server adapter or
+/// application and returns `None` when the extension is absent. It does not
+/// inspect forwarding Headers or establish that the value is trustworthy.
+pub fn extract_request_socket_address<B>(request: &http::Request<B>) -> Option<SocketAddr> {
+    request.extensions().get::<SocketAddr>().copied()
 }
 
-/// Return a transport peer address supplied out-of-band by an adapter.
+/// Extract the IP component of a `SocketAddr` request extension.
 ///
-/// An HTTP request does not inherently contain this network fact, so no
-/// request-based convenience function is provided. The value is returned
-/// unchanged; this function does not read headers or apply a proxy policy.
-pub const fn extract_peer_address(peer: SocketAddr) -> SocketAddr {
-    peer
+/// This delegates to [`extract_request_socket_address`]. It returns `None`
+/// when the extension is absent and does not inspect forwarding Headers or
+/// apply a proxy trust policy.
+pub fn extract_request_socket_ip<B>(request: &http::Request<B>) -> Option<IpAddr> {
+    extract_request_socket_address(request).map(|address| address.ip())
 }
 
 /// Extract the Axum transport peer stored in a request extension.
@@ -159,7 +154,7 @@ pub const fn extract_peer_address(peer: SocketAddr) -> SocketAddr {
 /// returns `None` when that extension is absent. The returned address is the
 /// socket peer; this function neither parses nor trusts forwarding Headers.
 #[cfg(feature = "axum")]
-pub fn extract_axum_peer_address<B>(request: &http::Request<B>) -> Option<SocketAddr> {
+pub fn extract_axum_socket_address<B>(request: &http::Request<B>) -> Option<SocketAddr> {
     request
         .extensions()
         .get::<axum::extract::ConnectInfo<SocketAddr>>()
@@ -174,16 +169,44 @@ pub fn extract_axum_peer_address<B>(request: &http::Request<B>) -> Option<Socket
 /// `X-Forwarded-For`, or vendor Headers, so it is not a Header-derived or
 /// effective client IP.
 #[cfg(feature = "axum")]
-pub fn extract_axum_peer_ip<B>(request: &http::Request<B>) -> Option<IpAddr> {
-    extract_axum_peer_address(request).map(|peer| peer.ip())
+pub fn extract_axum_socket_ip<B>(request: &http::Request<B>) -> Option<IpAddr> {
+    extract_axum_socket_address(request).map(|peer| peer.ip())
 }
 
-/// Extract a raw client IP assertion using the default field order.
+/// Extract the request's socket peer IP without inspecting HTTP fields.
+///
+/// With the `axum` feature, Axum's `ConnectInfo<SocketAddr>` extension takes
+/// precedence. If it is absent, this falls back to a directly stored
+/// `SocketAddr` request extension. It returns `None` when neither extension is
+/// present and does not inspect forwarding Headers.
+pub fn extract_socket_ip<B>(request: &http::Request<B>) -> Option<IpAddr> {
+    #[cfg(feature = "axum")]
+    if let Some(ip) = extract_axum_socket_ip(request) {
+        return Some(ip);
+    }
+
+    extract_request_socket_ip(request)
+}
+
+/// The effective header lookup order used by [`extract_client_ip`].
+///
+/// The standardized `Forwarded` field is checked first, followed by the de
+/// facto `X-Forwarded-For`, `X-Real-IP`, and `CF-Connecting-IP` fields. The
+/// first present source wins. This standard-first order is a library
+/// convention, not an RFC-defined precedence or trust policy.
+pub const CLIENT_IP_HEADERS: &[ClientIpHeader] = &[
+    ClientIpHeader::Forwarded,
+    ClientIpHeader::XForwardedFor,
+    ClientIpHeader::XRealIp,
+    ClientIpHeader::CfConnectingIp,
+];
+
+/// Extract a raw client IP assertion using the effective field order.
 ///
 /// This delegates to [`extract_client_ip_with_headers`] with
-/// [`CLIENT_IP_HEADERS`]. A missing value in every source returns
-/// `None`. A malformed, duplicate, or non-text value in the first present
-/// source returns an error without consulting lower-priority sources.
+/// [`CLIENT_IP_HEADERS`]. A missing value in every header returns `None`. A
+/// malformed, duplicate, or non-text value in the first present header returns
+/// an error without consulting lower-priority headers.
 ///
 /// For `Forwarded` and `X-Forwarded-For`, this returns the rightmost address,
 /// which is the assertion nearest the server. The result is still untrusted;
@@ -214,6 +237,21 @@ pub fn extract_client_ip_with_headers(
     Ok(None)
 }
 
+/// Extract a proxy-aware client IP, falling back to the socket peer.
+///
+/// This first applies [`extract_client_ip`] to the request Headers. Only when
+/// every Header in [`CLIENT_IP_HEADERS`] is absent does it fall back to
+/// [`extract_socket_ip`]. A malformed, duplicate, or non-text first-present
+/// Header returns an error without consulting the peer.
+///
+/// Header-derived addresses remain raw assertions. Use this function only
+/// when the deployment restricts access to trusted proxies that remove or
+/// overwrite every supported client-IP Header. This function does not verify
+/// trusted proxy addresses or CIDRs.
+pub fn extract_proxy_client_ip<B>(request: &http::Request<B>) -> Result<Option<IpAddr>, Error> {
+    Ok(extract_client_ip(request.headers())?.or_else(|| extract_socket_ip(request)))
+}
+
 #[cfg(test)]
 mod tests {
     use http::HeaderMap;
@@ -222,53 +260,150 @@ mod tests {
 
     use super::*;
     #[test]
-    fn peer_functions_preserve_the_transport_address() {
+    fn request_socket_functions_read_the_socket_addr_extension() {
         let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
-        assert_eq!(extract_peer_address(peer), peer);
+        let mut request = http::Request::new(());
+        request.extensions_mut().insert(peer);
+
+        assert_eq!(extract_request_socket_address(&request), Some(peer));
+        assert_eq!(extract_request_socket_ip(&request), Some(peer.ip()));
+    }
+
+    #[test]
+    fn request_socket_functions_return_none_without_the_extension() {
+        let request = http::Request::new(());
+
+        assert_eq!(extract_request_socket_address(&request), None);
+        assert_eq!(extract_request_socket_ip(&request), None);
+    }
+
+    #[test]
+    fn socket_ip_reads_the_direct_socket_addr_extension() {
+        let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
+        let mut request = http::Request::new(());
+        request.extensions_mut().insert(peer);
+
+        assert_eq!(extract_socket_ip(&request), Some(peer.ip()));
+    }
+
+    #[test]
+    fn socket_ip_returns_none_without_a_peer_extension() {
+        assert_eq!(extract_socket_ip(&http::Request::new(())), None);
+    }
+
+    #[cfg(feature = "axum")]
+    #[test]
+    fn request_socket_and_axum_socket_extractors_are_independent() {
+        let request_peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
+        let axum_peer: SocketAddr = "198.51.100.10:8080".parse().unwrap();
+        let mut request = http::Request::new(());
+
+        request.extensions_mut().insert(request_peer);
+        request
+            .extensions_mut()
+            .insert(axum::extract::ConnectInfo(axum_peer));
+
+        assert_eq!(extract_request_socket_address(&request), Some(request_peer));
+        assert_eq!(extract_request_socket_ip(&request), Some(request_peer.ip()));
+        assert_eq!(extract_axum_socket_address(&request), Some(axum_peer));
+        assert_eq!(extract_axum_socket_ip(&request), Some(axum_peer.ip()));
+        assert_eq!(extract_socket_ip(&request), Some(axum_peer.ip()));
+    }
+
+    #[test]
+    fn proxy_client_ip_prefers_a_header_over_the_peer() {
+        let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
+        let mut request = http::Request::new(());
+        request.extensions_mut().insert(peer);
+        request
+            .headers_mut()
+            .insert(FORWARDED, "for=198.51.100.10".parse().unwrap());
+
         assert_eq!(
-            extract_peer_ip(peer),
-            "203.0.113.8".parse::<IpAddr>().unwrap()
+            extract_proxy_client_ip(&request).unwrap(),
+            Some("198.51.100.10".parse().unwrap())
+        );
+    }
+
+    #[test]
+    fn proxy_client_ip_falls_back_to_the_peer_when_headers_are_absent() {
+        let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
+        let mut request = http::Request::new(());
+        request.extensions_mut().insert(peer);
+
+        assert_eq!(extract_proxy_client_ip(&request).unwrap(), Some(peer.ip()));
+    }
+
+    #[cfg(feature = "axum")]
+    #[test]
+    fn proxy_client_ip_falls_back_to_the_axum_peer() {
+        let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
+        let mut request = http::Request::new(());
+        request
+            .extensions_mut()
+            .insert(axum::extract::ConnectInfo(peer));
+
+        assert_eq!(extract_proxy_client_ip(&request).unwrap(), Some(peer.ip()));
+    }
+
+    #[test]
+    fn proxy_client_ip_does_not_fall_back_after_an_invalid_header() {
+        let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
+        let mut request = http::Request::new(());
+        request.extensions_mut().insert(peer);
+        request
+            .headers_mut()
+            .insert(FORWARDED, "for=not-an-ip".parse().unwrap());
+
+        assert!(extract_proxy_client_ip(&request).is_err());
+    }
+
+    #[test]
+    fn proxy_client_ip_returns_none_without_headers_or_peer() {
+        assert_eq!(
+            extract_proxy_client_ip(&http::Request::new(())).unwrap(),
+            None
         );
     }
 
     #[cfg(feature = "axum")]
     #[test]
-    fn axum_peer_address_reads_connect_info_extension() {
+    fn axum_socket_address_reads_connect_info_extension() {
         let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
         let mut request = http::Request::new(());
         request
             .extensions_mut()
             .insert(axum::extract::ConnectInfo(peer));
 
-        assert_eq!(extract_axum_peer_address(&request), Some(peer));
+        assert_eq!(extract_axum_socket_address(&request), Some(peer));
     }
 
     #[cfg(feature = "axum")]
     #[test]
-    fn axum_peer_address_returns_none_without_connect_info() {
+    fn axum_socket_address_returns_none_without_connect_info() {
         let request = http::Request::new(());
 
-        assert_eq!(extract_axum_peer_address(&request), None);
+        assert_eq!(extract_axum_socket_address(&request), None);
     }
 
     #[cfg(feature = "axum")]
     #[test]
-    fn axum_peer_ip_reads_connect_info_extension() {
+    fn axum_socket_ip_reads_connect_info_extension() {
         let peer: SocketAddr = "203.0.113.8:443".parse().unwrap();
         let mut request = http::Request::new(());
         request
             .extensions_mut()
             .insert(axum::extract::ConnectInfo(peer));
 
-        assert_eq!(extract_axum_peer_ip(&request), Some(peer.ip()));
+        assert_eq!(extract_axum_socket_ip(&request), Some(peer.ip()));
     }
 
     #[cfg(feature = "axum")]
     #[test]
-    fn axum_peer_ip_returns_none_without_connect_info() {
+    fn axum_socket_ip_returns_none_without_connect_info() {
         let request = http::Request::new(());
 
-        assert_eq!(extract_axum_peer_ip(&request), None);
+        assert_eq!(extract_axum_socket_ip(&request), None);
     }
 
     #[test]

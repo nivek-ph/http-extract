@@ -44,13 +44,20 @@ assert_eq!(
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-A socket peer is not an HTTP field. Obtain it from the server adapter before
-calling `extract_peer_ip`. With the non-default `axum` feature,
-`extract_axum_peer_address` reads an existing `ConnectInfo<SocketAddr>` request
-extension, while `extract_axum_peer_ip` returns its IP component; neither
-fabricates that fact. The
-Header-based `extract_client_ip` convenience does not use or authenticate the
-transport peer, so its result remains untrusted.
+A socket peer is not an HTTP field. Obtain it from the server adapter. If the
+adapter stores a `SocketAddr` directly in request extensions, use
+`extract_request_socket_address` or
+`extract_request_socket_ip`. With the non-default `axum` feature,
+`extract_axum_socket_address` reads an existing `ConnectInfo<SocketAddr>` request
+extension, while `extract_axum_socket_ip` returns its IP component; neither
+fabricates that fact. `extract_socket_ip` composes the Axum and direct extension
+sources without reading Headers.
+
+The Header-based `extract_client_ip` convenience does not use or authenticate
+the transport peer, so its result remains untrusted. For an explicitly
+trusted-proxy deployment, `extract_proxy_client_ip` checks the default Header
+order and falls back to `extract_socket_ip` only when all Headers in
+`CLIENT_IP_HEADERS` are absent. It does not verify the proxy trust boundary.
 
 Before deployment, review [Standards and compatibility](standards.md),
 [Cargo features](features.md), and the [client IP trust boundary](trusted-proxies.md).

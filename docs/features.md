@@ -11,7 +11,7 @@ features enable the complete common API: `api-key`, `authority`,
 | `authority` | URI authority and strict `Host` extraction |
 | `authorization` | Raw Authorization and lightweight Bearer/Basic routing |
 | `axum` | Optional Axum `ConnectInfo<SocketAddr>` peer address/IP adapters; also enables `client-ip` |
-| `client-ip` | Peer helpers and default/custom Header-based IP selection |
+| `client-ip` | Peer helpers plus default/custom and proxy-aware client-IP selection |
 | `client-ip-headers` | Common single-value provider/proxy IP fields |
 | `content-type` | Content-Type parsing and optional `mime` dependency |
 | `forwarded` | Strict RFC 7239 `for=` IP-chain extraction |
