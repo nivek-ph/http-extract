@@ -21,13 +21,13 @@ use http::{HeaderMap, Request, header::AUTHORIZATION};
 use crate::{Error, header::extract_single_header_text};
 
 /// The Bearer scheme.
-const BEARER_SCHEME: &str = "Bearer";
+pub const BEARER_SCHEME: &str = "Bearer";
 
 /// The Basic scheme.
-const BASIC_SCHEME: &str = "Basic";
+pub const BASIC_SCHEME: &str = "Basic";
 
 /// The space character that separates the scheme from the credentials.
-const SCHEME_SEPARATOR: char = ' ';
+pub const SCHEME_SEPARATOR: char = ' ';
 
 /// Extract the singular `Authorization` field as text.
 ///

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Expose all public extraction APIs directly from the crate root.
+
+### Removed
+
+- Remove the former public field-family module paths in favor of the flat crate-root API.
+
 ## [0.1.0](https://github.com/nivek-ph/http-extract/releases/tag/v0.1.0) - 2026-08-10
 
 ### Added

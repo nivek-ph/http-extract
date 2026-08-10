@@ -1,6 +1,6 @@
 # Common client IP fields
 
-The `client_ip_headers` module provides one direct function per field:
+The `client-ip-headers` feature provides one direct function per field:
 
 - `extract_header_cf_connecting_ip` / `extract_request_cf_connecting_ip`;
 - `extract_header_cloudfront_viewer_address` / matching Request function;

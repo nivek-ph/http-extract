@@ -2,8 +2,7 @@
 
 use http::Request;
 use http_extract::{
-    authority::{extract_header_authority, extract_request_authority},
-    request_id::extract_header_request_id,
+    extract_header_authority, extract_header_request_id, extract_request_authority,
 };
 
 #[test]

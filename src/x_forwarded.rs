@@ -27,7 +27,7 @@ pub const X_FORWARDED_PROTO: HeaderName = HeaderName::from_static("x-forwarded-p
 /// are accepted in wire order, but a non-text line, empty comma-separated item,
 /// or invalid IP/socket-address item returns an error. Values are syntactically
 /// parsed only; no sender is authenticated and parsing does not make them
-/// trustworthy. A feature-gated `client_ip::extract_client_ip` convenience can
+/// trustworthy. A feature-gated [`crate::extract_client_ip`] convenience can
 /// select from this and other fields, but it does not authenticate the sender;
 /// establish trust out-of-band before using the result for a security decision.
 pub fn extract_header_x_forwarded_for(headers: &HeaderMap) -> Result<Option<Vec<IpAddr>>, Error> {

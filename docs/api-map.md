@@ -1,9 +1,11 @@
-# Module and API map
+# Feature and API map
 
-Every public extraction module owns one field family. Header functions are the
-single parsing implementation; Request functions delegate.
+Every extraction feature owns one field family. Header functions are the single
+parsing implementation; Request functions delegate. All public APIs are exposed
+from the crate root, so applications import
+`http_extract::extract_request_x_forwarded_proto` directly.
 
-| Module | Main Header API | Request convenience | Result |
+| Feature/API family | Main Header API | Request convenience | Result |
 | --- | --- | --- | --- |
 | `api_key` | `extract_header_api_key` | `extract_request_api_key` | `Option<&str>` |
 | `authority` | `extract_header_authority` | `extract_request_authority` | `Option<Authority>` |
@@ -14,14 +16,14 @@ single parsing implementation; Request functions delegate.
 | `x_forwarded` | `extract_header_x_forwarded_for`, `extract_header_x_forwarded_proto` | matching Request functions | IP or scheme vectors |
 | `client_ip_headers` | one `extract_header_*` function per common provider/proxy field | matching Request functions | `Option<IpAddr>` |
 
-`client_ip::extract_peer_address` and `extract_peer_ip` accept an out-of-band
-`SocketAddr`. `client_ip::extract_client_ip` uses the library's documented
+`extract_peer_address` and `extract_peer_ip` accept an out-of-band
+`SocketAddr`. `extract_client_ip` uses the library's documented
 default Header order; `extract_client_ip_with_headers` accepts an explicit
 ordered slice of `ClientIpHeader` values. Both Header selectors return raw,
 untrusted assertions.
 
 With the non-default `axum` feature,
-`client_ip::extract_axum_peer_address(&Request<B>)` and
+`extract_axum_peer_address(&Request<B>)` and
 `extract_axum_peer_ip(&Request<B>)` read only the `ConnectInfo<SocketAddr>`
 request extension and return `None` when it is absent. They do not inspect
 forwarding Headers.
