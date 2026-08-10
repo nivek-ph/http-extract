@@ -15,7 +15,6 @@ categories = ["web-programming::http-server"]
 include = [
     "/src/**",
     "/examples/**",
-    "/tests/**",
     "/Cargo.toml",
     "/README.md",
     "/LICENSE-APACHE",

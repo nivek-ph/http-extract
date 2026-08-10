@@ -49,8 +49,8 @@ convenience wrappers that delegate through `request.headers()`.
 | `header`            | Strict singular-field helpers and append-without-replace utility |
 
 
-See the [module and API map](docs/api-map.md) for exact function names and
-return types.
+See the [module and API map](https://github.com/nivek-ph/http-extract/blob/main/docs/api-map.md)
+for exact function names and return types.
 
 ## Client IP boundary
 
@@ -72,8 +72,8 @@ a trusted proxy overwrites. `extract_peer_ip` returns an out-of-band socket
 peer; with the optional `axum` feature, `extract_axum_peer_address` and
 `extract_axum_peer_ip` read Axum's `ConnectInfo<SocketAddr>` extension.
 
-Read the [client IP trust boundary](docs/trusted-proxies.md) before using a
-Header-derived IP for authorization, rate limiting, or auditing.
+Read the [client IP trust boundary](https://github.com/nivek-ph/http-extract/blob/main/docs/trusted-proxies.md)
+before using a Header-derived IP for authorization, rate limiting, or auditing.
 
 ## Features
 
@@ -87,8 +87,8 @@ Default features are `api-key`, `authority`, `authorization`, `client-ip`,
 - `--no-default-features` leaves only `Error` and the generic `header` module.
 
 The default normal dependency tree does not include Axum, Tower, Tokio,
-tracing, or OpenTelemetry. See the [feature guide](docs/features.md) for
-copyable configurations.
+tracing, or OpenTelemetry. See the [feature guide](https://github.com/nivek-ph/http-extract/blob/main/docs/features.md)
+for copyable configurations.
 
 ## Errors and sensitive values
 
@@ -119,7 +119,8 @@ Basic decoding.
 
 `X-Forwarded-*` and provider-specific client-IP fields are de facto or vendor
 conventions, not IETF standards. See
-[standards and compatibility](docs/standards.md) for the supported boundary.
+[standards and compatibility](https://github.com/nivek-ph/http-extract/blob/main/docs/standards.md)
+for the supported boundary.
 
 ## Axum example
 
@@ -131,5 +132,6 @@ observable output:
 cargo run --example axum-demo --features axum
 ```
 
-The full guide is available in the `[docs](docs/README.md)` mdBook sources.
+The full guide is available in the [docs](https://github.com/nivek-ph/http-extract/blob/main/docs/README.md)
+mdBook sources.
 The crate declares Rust 1.96.0 and is licensed under MIT or Apache-2.0.

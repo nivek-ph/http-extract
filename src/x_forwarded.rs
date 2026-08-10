@@ -85,6 +85,7 @@ pub fn extract_rightmost_x_forwarded_for(headers: &HeaderMap) -> Result<Option<I
     Ok(extract_header_x_forwarded_for(headers)?.and_then(|ips| ips.last().copied()))
 }
 
+/// Parse an IP address or socket address from a string.
 fn parse_ip(value: &str, name: HeaderName) -> Result<IpAddr, Error> {
     if let Ok(address) = value.parse() {
         return Ok(address);
@@ -92,19 +93,10 @@ fn parse_ip(value: &str, name: HeaderName) -> Result<IpAddr, Error> {
     if let Ok(address) = value.parse::<SocketAddr>() {
         return Ok(address.ip());
     }
-    if let Some(rest) = value.strip_prefix('[')
-        && let Some((inner, suffix)) = rest.split_once(']')
-        && (suffix.is_empty()
-            || suffix.strip_prefix(':').is_some_and(|port| {
-                !port.is_empty() && port.bytes().all(|byte| byte.is_ascii_digit())
-            }))
-        && let Ok(address) = inner.parse()
-    {
-        return Ok(address);
-    }
     Err(Error::invalid_header(name))
 }
 
+/// Extract comma-separated values from a header.
 fn extract_comma_values<T>(
     headers: &HeaderMap,
     name: &HeaderName,
@@ -161,17 +153,37 @@ mod tests {
     #[test]
     fn rejects_invalid_x_forwarded_for_values() {
         let mut headers = HeaderMap::new();
-        headers.insert(&X_FORWARDED_FOR, "[2001:db8::1]junk".parse().unwrap());
-        assert!(matches!(
-            extract_header_x_forwarded_for(&headers),
-            Err(Error::InvalidHeader { .. })
-        ));
+        for value in [
+            "[2001:db8::1]",
+            "[2001:db8::1]junk",
+            "[2001:db8::1]:65536",
+            "[2001:db8::1]:99999",
+        ] {
+            headers.insert(&X_FORWARDED_FOR, value.parse().unwrap());
+            assert!(
+                matches!(
+                    extract_header_x_forwarded_for(&headers),
+                    Err(Error::InvalidHeader { .. })
+                ),
+                "unexpectedly accepted {value:?}",
+            );
+        }
 
         headers.insert(&X_FORWARDED_FOR, HeaderValue::from_bytes(&[0xff]).unwrap());
         assert!(matches!(
             extract_header_x_forwarded_for(&headers),
             Err(Error::InvalidHeader { .. })
         ));
+    }
+
+    #[test]
+    fn accepts_bracketed_ipv6_with_valid_port() {
+        let mut headers = HeaderMap::new();
+        headers.insert(&X_FORWARDED_FOR, "[2001:db8::1]:65535".parse().unwrap());
+        assert_eq!(
+            extract_header_x_forwarded_for(&headers).unwrap(),
+            Some(vec!["2001:db8::1".parse().unwrap()]),
+        );
     }
 
     #[test]
