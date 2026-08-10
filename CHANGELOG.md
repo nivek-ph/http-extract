@@ -10,11 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add request-extension helpers for directly stored `SocketAddr` values and their IP components.
+- Add `extract_socket_ip` for Axum/direct socket-peer selection and
+  `extract_proxy_client_ip` for proxy Header selection with peer fallback.
 
 ### Removed
 
-- Remove `extract_peer_address` and `extract_peer_ip`; callers with an out-of-band `SocketAddr`
-  can use the value directly or call its `ip()` method.
+- Remove the former out-of-band `extract_peer_address` and `extract_peer_ip(SocketAddr)` passthrough
+  functions; callers with an out-of-band `SocketAddr` can use the value directly or call its
+  `ip()` method. The new request-based `extract_socket_ip(&Request)` reads peer extensions.
 
 ## [0.1.1](https://github.com/nivek-ph/http-extract/releases/tag/v0.1.1) - 2026-08-10
 
