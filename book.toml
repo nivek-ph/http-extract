@@ -1,0 +1,19 @@
+[book]
+title = "http-extract"
+description = "Strict, trust-aware HTTP request metadata extraction"
+authors = ["nivek-ph"]
+language = "en"
+src = "docs"
+
+[output.html]
+site-url = "/http-extract/"
+default-theme = "light"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/nivek-ph/http-extract"
+git-repository-icon = "fab-github"
+edit-url-template = "https://github.com/nivek-ph/http-extract/edit/main/{path}"
+no-section-label = true
+
+[output.html.search]
+enable = true
+limit-results = 20

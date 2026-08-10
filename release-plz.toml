@@ -1,0 +1,5 @@
+[workspace]
+release_always = false
+
+# Prepare releases only for features, fixes, performance work, and breaking changes.
+release_commits = '^(?:(feat|fix|perf)[(:!]|[^:]+!:)'

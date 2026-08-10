@@ -1,0 +1,65 @@
+# Standards and compatibility
+
+`http-extract` implements narrow extraction behavior derived from the stable
+RFC versions below. It does not claim complete HTTP, proxy, or authentication
+protocol conformance.
+
+## IETF standards used
+
+- [HTTP Semantics, RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html):
+  [Section 5](https://www.rfc-editor.org/rfc/rfc9110.html#section-5) informs
+  strict field handling;
+  [Section 7.2](https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2) covers
+  request authority and `Host`;
+  [Section 8.3](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.3) covers
+  `Content-Type`; and
+  [Section 11](https://www.rfc-editor.org/rfc/rfc9110.html#section-11) supplies
+  the Authorization framework context. The crate only extracts these fields;
+  it is not a complete HTTP implementation and does not authenticate.
+- [Forwarded, RFC 7239](https://www.rfc-editor.org/rfc/rfc7239.html): support is
+  intentionally limited to the field structure in
+  [Section 4](https://www.rfc-editor.org/rfc/rfc7239.html#section-4), the
+  [`for=` parameter in Section 5.2](https://www.rfc-editor.org/rfc/rfc7239.html#section-5.2),
+  and IP node forms from
+  [Section 6.1](https://www.rfc-editor.org/rfc/rfc7239.html#section-6.1).
+  `extract_header_forwarded_for` returns a continuous IP chain and rejects
+  missing, unknown, obfuscated, or non-IP nodes instead of skipping them. It
+  does not implement the full Forwarded object model. Parsing and Header-based
+  selection do not establish trust; deployments must account for the
+  [Section 8](https://www.rfc-editor.org/rfc/rfc7239.html#section-8) security
+  considerations independently.
+- [Bearer Token Usage, RFC 6750 Section 2.1](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1):
+  the helper performs ASCII case-insensitive scheme routing and returns the raw
+  credential substring. It does not validate a token or authenticate.
+- [Basic Authentication, RFC 7617 Section 2](https://www.rfc-editor.org/rfc/rfc7617.html#section-2):
+  the helper performs ASCII case-insensitive scheme routing and returns the raw
+  credential substring. It does not validate credentials, decode Base64, or
+  authenticate.
+
+## Non-standard fields
+
+The following are common vendor or de facto fields, not IETF standards:
+
+- `X-Forwarded-For` and `X-Forwarded-Proto`;
+- `CF-Connecting-IP`;
+- `CloudFront-Viewer-Address`;
+- `Fly-Client-IP`;
+- `True-Client-IP`;
+- `X-Envoy-External-Address`;
+- `X-Real-IP`.
+
+Their APIs only parse raw assertions. Presence does not authenticate a proxy or
+make a value suitable for access control, rate limiting, or audit use. See the
+[client IP trust boundary](trusted-proxies.md) for deployment guidance.
+
+## Rust and feature compatibility
+
+The declared Rust baseline is Rust 1.96.0, matching `Cargo.toml`'s
+`rust-version` and `rust-toolchain.toml`. This is a compiler compatibility
+statement only; the core remains synchronous and framework-independent, and no
+broader runtime compatibility is implied.
+
+Default features enable all documented extraction modules. Consumers using
+`default-features = false` can select only the modules they need. The exact
+feature list, dependency relationships, and copyable configuration are in
+[Cargo features](features.md).

@@ -1,0 +1,84 @@
+[package]
+name = "http-extract"
+version = "0.1.0-alpha.0"
+edition = "2024"
+rust-version = "1.96.0"
+description = "trust-aware extraction of HTTP request metadata"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+authors = ["nivek-ph"]
+homepage = "https://github.com/nivek-ph/http-extract"
+repository = "https://github.com/nivek-ph/http-extract"
+documentation = "https://docs.rs/http-extract"
+keywords = ["http", "headers", "proxy", "forwarded"]
+categories = ["web-programming::http-server"]
+include = [
+    "/src/**",
+    "/examples/**",
+    "/tests/**",
+    "/Cargo.toml",
+    "/README.md",
+    "/LICENSE-APACHE",
+    "/LICENSE-MIT",
+]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = [
+    "api-key",
+    "authority",
+    "authorization",
+    "request-id",
+    "client-ip",
+    "client-ip-headers",
+    "content-type",
+    "forwarded",
+    "x-forwarded",
+]
+api-key = []
+authority = []
+authorization = []
+axum = ["client-ip", "dep:axum"]
+request-id = []
+client-ip = ["client-ip-headers", "forwarded", "x-forwarded"]
+client-ip-headers = []
+content-type = ["dep:mime"]
+forwarded = []
+x-forwarded = []
+
+[dependencies]
+axum = { version = "0.8", optional = true, default-features = false, features = [
+    "tokio",
+] }
+http = "1"
+mime = { version = "0.3", optional = true }
+thiserror = "2"
+
+[[example]]
+name = "axum-demo"
+path = "examples/axum/main.rs"
+required-features = [
+    "api-key",
+    "authority",
+    "authorization",
+    "axum",
+    "client-ip",
+    "content-type",
+    "request-id",
+]
+
+[dev-dependencies]
+axum = { version = "0.8.9", default-features = false, features = [
+    "http1",
+    "json",
+    "tokio",
+] }
+serde_json = "1"
+tokio = { version = "1.48", features = ["macros", "net", "rt-multi-thread"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+    "fmt",
+] }
+tower = { version = "0.5", features = ["util"] }
