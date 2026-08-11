@@ -37,4 +37,4 @@ response.
 Review the [client IP trust boundary](trusted-proxies.md) and
 [Standards and compatibility](standards.md) before using a Header-derived IP
 for a security decision. Complete commands and the output contract are in the
-example README at `examples/axum/README.md`.
+[example README](../examples/axum/README.md).
