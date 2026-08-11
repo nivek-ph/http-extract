@@ -134,6 +134,7 @@ fn parse_forwarded_node(value: &str, quoted: bool) -> Result<IpAddr, Error> {
         .map_err(|_| invalid())
 }
 
+// validate the port number
 fn validate_node_port(value: &str) -> Result<(), Error> {
     let numeric =
         !value.is_empty() && value.len() <= 5 && value.bytes().all(|byte| byte.is_ascii_digit());
@@ -146,6 +147,7 @@ fn validate_node_port(value: &str) -> Result<(), Error> {
     }
 }
 
+// split the value into a vector of strings, respecting quoted parts
 fn split_quoted(value: &str, delimiter: char) -> Result<Vec<&str>, Error> {
     let mut output = Vec::new();
     let mut quoted = false;
