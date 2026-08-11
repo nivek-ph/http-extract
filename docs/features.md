@@ -1,26 +1,65 @@
-# Cargo features
+# Features
 
 The crate declares Rust 1.96.0 as its compiler compatibility baseline. Default
-features enable the complete common API: `api-key`, `authority`,
+features enable the complete common extraction API: `api-key`, `authority`,
 `authorization`, `client-ip`, `client-ip-headers`, `content-type`, `forwarded`,
 `request-id`, and `x-forwarded`.
 
-| Feature | Adds |
-| --- | --- |
-| `api-key` | Fixed `X-API-Key` / `Api-Key` extraction |
-| `authority` | URI authority and strict `Host` extraction |
-| `authorization` | Raw Authorization and lightweight Bearer/Basic routing |
-| `axum` | Optional Axum `ConnectInfo<SocketAddr>` peer address/IP adapters; also enables `client-ip` |
-| `client-ip` | Peer helpers plus default/custom and proxy-aware client-IP selection |
-| `client-ip-headers` | Common single-value provider/proxy IP fields |
-| `content-type` | Content-Type parsing and optional `mime` dependency |
-| `forwarded` | Strict RFC 7239 `for=` IP-chain extraction |
-| `request-id` | Fixed X-Request-Id then Request-Id precedence |
-| `x-forwarded` | Raw X-Forwarded-For and X-Forwarded-Proto parsing |
+Every extraction feature owns one field family. Header functions contain the
+parsing implementation; matching Request functions delegate through
+`request.headers()`. All public APIs are exposed from the crate root.
+
+## Feature and API reference
+
+| Cargo feature | Adds | Main APIs | Result |
+| --- | --- | --- | --- |
+| `api-key` | `X-API-Key`, then `Api-Key` extraction | `extract_header_api_key`, `extract_request_api_key` | `Option<&str>` |
+| `authority` | URI authority and strict `Host` extraction | `extract_header_authority`, `extract_request_authority` | `Option<Authority>` |
+| `authorization` | Raw Authorization and Bearer/Basic scheme routing | `extract_*_authorization`, `extract_*_bearer_token`, `extract_*_basic_credentials` | `Option<&str>` |
+| `axum` | Optional Axum `ConnectInfo<SocketAddr>` peer adapter | `extract_axum_socket_address`, `extract_axum_socket_ip` | `Option<SocketAddr>` or `Option<IpAddr>` |
+| `client-ip` | Socket-peer helpers and default/custom Header selection | `extract_socket_ip`, `extract_client_ip`, `extract_client_ip_with_headers`, `extract_proxy_client_ip` | `Option<IpAddr>` |
+| `client-ip-headers` | Common provider and proxy client-IP fields | one `extract_header_*` and `extract_request_*` pair per field | `Option<IpAddr>` |
+| `content-type` | Strict Content-Type parsing and the optional `mime` dependency | `extract_header_content_type`, `extract_request_content_type` | `Option<Mime>` |
+| `forwarded` | Strict RFC 7239 `Forwarded` `for=` IP chains | `extract_header_forwarded_for`, `extract_request_forwarded_for` | `Option<Vec<IpAddr>>` |
+| `request-id` | `X-Request-Id`, then `Request-Id` precedence | `extract_header_request_id`, `extract_request_request_id` | `Option<&str>` |
+| `x-forwarded` | Raw `X-Forwarded-For` and `X-Forwarded-Proto` parsing | `extract_*_x_forwarded_for`, `extract_*_x_forwarded_proto` | `Option<Vec<IpAddr>>` or `Option<Vec<String>>` |
+
+The crate-wide `Error` and generic `header` utilities remain available with no
+default features. `header` includes the strict singular-field helpers and
+`append_header_value`, which appends without replacing existing field lines.
+
+## Client IP composition
+
+`extract_request_socket_address` and `extract_request_socket_ip` read a
+`SocketAddr` stored directly in request extensions. `extract_socket_ip` prefers
+Axum `ConnectInfo<SocketAddr>` when the `axum` feature is enabled, then falls
+back to the direct extension. None of these peer helpers inspect Headers.
+
+`extract_client_ip` uses the documented default Header order, while
+`extract_client_ip_with_headers` accepts an explicit ordered slice of
+`ClientIpHeader` values. Both return raw, untrusted Header assertions.
+`extract_proxy_client_ip` applies the default Header order and uses
+`extract_socket_ip` only when every Header in `CLIENT_IP_HEADERS` is absent.
+
+The non-default `axum` feature enables `client-ip`. Its
+`extract_axum_socket_address` and `extract_axum_socket_ip` functions return
+`None` when `ConnectInfo<SocketAddr>` is absent; they never fabricate a peer.
+
+See the [client IP trust boundary](trusted-proxies.md) before using a
+Header-derived address for authorization, rate limiting, or auditing.
+
+## Feature relationships
 
 `client-ip` enables `client-ip-headers`, `forwarded`, and `x-forwarded` because
-its selectors use those parsing APIs. The crate-wide `Error` and generic
-`header` utilities remain available with no default features.
+its selectors use those parsing APIs. `content-type` enables the optional
+`mime` dependency. The normal default dependency tree does not include Axum,
+Tower, Tokio, tracing, or OpenTelemetry.
+
+Enable the optional Axum adapter and runnable example explicitly:
+
+```sh
+cargo run --example axum-demo --features axum
+```
 
 Useful checks for consumers and contributors:
 
@@ -30,16 +69,6 @@ cargo test --no-default-features --features authority,content-type,request-id
 cargo test --no-default-features --features client-ip
 cargo test --no-default-features --features client-ip-headers
 ```
-
-Axum is an optional, non-default library dependency used only by the small
-transport-peer adapter and the runnable example. Enable it explicitly:
-
-```sh
-cargo run --example axum-demo --features axum
-```
-
-Tower, Tokio, and tracing are not required by the default library API. The
-example uses them as development dependencies.
 
 This feature layout does not imply additional runtime compatibility. See
 [Standards and compatibility](standards.md) for the protocol support boundary.

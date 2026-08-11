@@ -60,4 +60,4 @@ order and falls back to `extract_socket_ip` only when all Headers in
 `CLIENT_IP_HEADERS` are absent. It does not verify the proxy trust boundary.
 
 Before deployment, review [Standards and compatibility](standards.md),
-[Cargo features](features.md), and the [client IP trust boundary](trusted-proxies.md).
+[Features](features.md), and the [client IP trust boundary](trusted-proxies.md).

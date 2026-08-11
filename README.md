@@ -1,23 +1,66 @@
 # http-extract
 
-Strict, synchronous extraction of HTTP request metadata using `http` types.
-The default API is framework-independent; an optional `axum` feature adds
-socket-peer extraction from `ConnectInfo` request extensions.
+### Extract the signal. Keep trust explicit.
 
-The crate keeps transport facts separate from Header assertions. Values from
-`Forwarded`, `X-Forwarded-*`, and provider-specific client-IP fields are raw and
-untrusted until the deployment establishes an explicit proxy trust boundary.
+Strict, synchronous HTTP request metadata extraction for Rust, built on
+ordinary `http` types.
 
-## Install
+[Crates.io](https://crates.io/crates/http-extract)
+[Documentation](https://docs.rs/http-extract)
+[Rust](https://github.com/nivek-ph/http-extract/actions/workflows/rust.yml)
+[License](#license)
 
-Default features provide all common extractors:
+[Guide](https://nivek-ph.github.io/http-extract/) ·
+[API reference](https://docs.rs/http-extract) ·
+[Features](https://github.com/nivek-ph/http-extract/blob/main/docs/features.md) ·
+[Axum example](https://github.com/nivek-ph/http-extract/tree/main/examples/axum)
+
+`http-extract` provides small, direct functions for reading request metadata.
+The default API is framework-independent; an optional `axum` feature reads an
+existing socket peer from `ConnectInfo<SocketAddr>`.
+
+Its central rule is simple: **transport facts and Header assertions are not the
+same thing**. Values from `Forwarded`, `X-Forwarded-*`, and provider-specific
+client-IP fields remain raw and untrusted until the deployment establishes an
+explicit proxy trust boundary.
+
+## Quick start
+
+Default features enable all common extractor families:
 
 ```toml
 [dependencies]
 http-extract = "0.1"
 ```
 
-Select only the API families an application uses:
+Header functions contain the parsing logic. Matching Request functions are
+convenience wrappers over `request.headers()`:
+
+```rust
+use http::Request;
+use http_extract::{extract_request_authority, extract_request_content_type};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let request = Request::builder()
+        .uri("https://example.com/items")
+        .header("content-type", "application/json")
+        .body(())?;
+
+    assert_eq!(
+        extract_request_authority(&request)?.unwrap().as_str(),
+        "example.com"
+    );
+    assert_eq!(
+        extract_request_content_type(&request)?.unwrap().essence_str(),
+        "application/json"
+    );
+
+    Ok(())
+}
+```
+
+For a smaller dependency surface, disable defaults and select only what the
+application uses:
 
 ```toml
 [dependencies]
@@ -27,111 +70,113 @@ http-extract = { version = "0.1", default-features = false, features = [
 ] }
 ```
 
+## Trust is part of the input
 
+```text
+socket peer ──────────────────────── transport fact
 
-## API
+Forwarded / X-Forwarded-* ───────── raw Header assertion
+provider client-IP fields ───────── raw Header assertion
+                                             │
+                                             ▼
+                              deployment-specific trust policy
+```
 
-Header functions contain the parsing logic. Matching Request functions are
-convenience wrappers that delegate through `request.headers()`.
+| Source          | Library behavior                                               | Security meaning                                  |
+| --------------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| Socket peer     | Read from the request extension supplied by the server adapter | Connection fact; identifies the immediate peer    |
+| `Forwarded`     | Strict RFC 7239 `for=` IP-chain parsing                        | Untrusted until the proxy boundary is established |
+| `X-Forwarded-*` | Strict parsing of common de facto fields                       | Untrusted Header assertion                        |
+| Provider fields | One explicit extractor per supported field                     | Untrusted vendor assertion                        |
 
-
-| Feature/API family  | Purpose                                                          |
-| ------------------- | ---------------------------------------------------------------- |
-| `api_key`           | `X-API-Key`, then `Api-Key` fallback                             |
-| `authority`         | URI authority and strict `Host` extraction                       |
-| `authorization`     | Raw Authorization plus lightweight Bearer/Basic scheme routing   |
-| `client_ip`         | Socket-peer helpers and default/custom Header selection          |
-| `client_ip_headers` | Common provider and proxy client-IP fields                       |
-| `content_type`      | Strict `Content-Type` parsing into `mime::Mime`                  |
-| `forwarded`         | RFC 7239 `Forwarded` `for=` IP chains                            |
-| `request_id`        | `X-Request-Id`, then `Request-Id` fallback                       |
-| `x_forwarded`       | `X-Forwarded-For` and `X-Forwarded-Proto` parsing                |
-| `header`            | Strict singular-field helpers and append-without-replace utility |
-
-
-See the [feature and API map](https://github.com/nivek-ph/http-extract/blob/main/docs/api-map.md)
-for exact function names and return types.
-
-## Client IP boundary
-
-`extract_client_ip` checks these Header sources in order:
+`extract_client_ip` checks Header sources in this order:
 
 1. RFC 7239 `Forwarded`;
 2. `X-Forwarded-For`;
 3. `X-Real-IP`;
 4. `CF-Connecting-IP`.
 
-This standard-first order is a library convention, not an RFC-defined
-precedence or trust policy. `extract_client_ip_with_headers` accepts an
-explicit ordered slice of `ClientIpHeader` values for deployment-specific
-selection. A malformed first-present source fails instead of falling through.
+That order is a library convention, not an RFC-defined trust policy. A malformed
+first-present source fails instead of silently falling through.
+`extract_client_ip_with_headers` accepts an explicit ordered source list.
 
-`extract_socket_ip` reads Axum `ConnectInfo<SocketAddr>` when available, then a
-direct `SocketAddr` request extension; it never reads Headers.
-`extract_proxy_client_ip` checks the Header order above and falls back to that
-peer only when all Headers in `CLIENT_IP_HEADERS` are absent. Header-derived
-values remain untrusted unless the deployment enforces a trusted-proxy boundary.
+`extract_socket_ip` never reads Headers. `extract_proxy_client_ip` uses the
+default Header order and falls back to the socket peer only when every supported
+Header is absent; it does not authenticate a proxy.
 
-Read the [client IP trust boundary](https://github.com/nivek-ph/http-extract/blob/main/docs/trusted-proxies.md)
-before using a Header-derived IP for authorization, rate limiting, or auditing.
+Read the
+[client IP trust boundary](https://github.com/nivek-ph/http-extract/blob/main/docs/trusted-proxies.md)
+before using a Header-derived address for authorization, rate limiting, or
+auditing.
 
 ## Features
 
-Default features are `api-key`, `authority`, `authorization`, `client-ip`,
-`client-ip-headers`, `content-type`, `forwarded`, `request-id`, and
-`x-forwarded`.
+| Cargo feature       | What it adds                                            |
+| ------------------- | ------------------------------------------------------- |
+| `api-key`           | `X-API-Key`, then `Api-Key` extraction                  |
+| `authority`         | URI authority and strict `Host` extraction              |
+| `authorization`     | Raw Authorization and Bearer/Basic scheme routing       |
+| `client-ip`         | Socket-peer helpers and default/custom Header selection |
+| `client-ip-headers` | Common provider and proxy client-IP fields              |
+| `content-type`      | Strict parsing into `mime::Mime`                        |
+| `forwarded`         | RFC 7239 `Forwarded` `for=` IP chains                   |
+| `request-id`        | `X-Request-Id`, then `Request-Id` fallback              |
+| `x-forwarded`       | `X-Forwarded-For` and `X-Forwarded-Proto` parsing       |
+| `axum`              | Optional `ConnectInfo<SocketAddr>` peer adapter         |
 
-- `client-ip` enables its Header parsing dependencies;
-- `content-type` enables the optional `mime` dependency;
-- non-default `axum` enables `client-ip` and the optional Axum dependency;
-- `--no-default-features` leaves only `Error` and the generic Header helpers.
+Default features include every row except `axum`. With no default features, the
+crate-wide `Error` and generic Header helpers remain available. The normal
+default dependency tree does not include Axum, Tower, Tokio, tracing, or
+OpenTelemetry.
 
-The default normal dependency tree does not include Axum, Tower, Tokio,
-tracing, or OpenTelemetry. See the [feature guide](https://github.com/nivek-ph/http-extract/blob/main/docs/features.md)
-for copyable configurations.
+See the complete
+[Features guide](https://github.com/nivek-ph/http-extract/blob/main/docs/features.md)
+for exact functions, return types, and feature relationships.
 
 ## Errors and sensitive values
 
-Missing optional metadata returns `Ok(None)`. Duplicate, non-text, and invalid
-fields return the crate-wide `Error`; errors identify only the field name and
-category, never its value.
+Missing optional metadata returns `Ok(None)`. Duplicate, non-text, and malformed
+fields return the crate-wide `Error`. Errors identify the field and category,
+never the raw value.
 
-Authorization credentials and API keys are returned only by their explicit
-extractors. Do not log or echo those values, cookies, request bodies, complete
-query strings, or raw forwarding fields.
-
-## Standards
-
-The crate implements narrow extraction behavior, not complete protocol or
-authentication implementations:
-
-- [HTTP Semantics, RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html),
-including [field semantics](https://www.rfc-editor.org/rfc/rfc9110.html#section-5),
-[authority](https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2), and
-[Content-Type](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.3);
-- [Forwarded, RFC 7239](https://www.rfc-editor.org/rfc/rfc7239.html), limited to
-continuous `for=` IP chains and subject to its
-[security considerations](https://www.rfc-editor.org/rfc/rfc7239.html#section-8);
-- [Bearer, RFC 6750 Section 2.1](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1)
-and [Basic, RFC 7617 Section 2](https://www.rfc-editor.org/rfc/rfc7617.html#section-2),
-used only for lightweight scheme recognition without authentication or
-Basic decoding.
-
-`X-Forwarded-*` and provider-specific client-IP fields are de facto or vendor
-conventions, not IETF standards. See
-[standards and compatibility](https://github.com/nivek-ph/http-extract/blob/main/docs/standards.md)
-for the supported boundary.
+Authorization credentials and API keys are exposed only by their explicit
+extractors. Do not log those values, cookies, request bodies, complete query
+strings, or raw forwarding fields.
 
 ## Axum example
 
-The runnable [Axum example](examples/axum/README.md) demonstrates peer
-extraction, request metadata, client-IP selection, error handling, and safe
-observable output:
+The runnable
+[Axum example](https://github.com/nivek-ph/http-extract/tree/main/examples/axum)
+demonstrates peer extraction, request metadata, client-IP selection, generic
+error responses, and safe observable output:
 
 ```sh
 cargo run --example axum-demo --features axum
 ```
 
-The full guide is available in the [docs](https://github.com/nivek-ph/http-extract/blob/main/docs/README.md)
-mdBook sources.
-The crate declares Rust 1.96.0 and is licensed under MIT or Apache-2.0.
+Axum is an optional integration boundary, not part of the default library core.
+
+## Compatibility and standards
+
+- Rust 1.96.0 or newer;
+- HTTP semantics from [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html);
+- narrow `Forwarded` support from
+  [RFC 7239](https://www.rfc-editor.org/rfc/rfc7239.html);
+- lightweight Bearer and Basic scheme routing informed by
+  [RFC 6750](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1) and
+  [RFC 7617](https://www.rfc-editor.org/rfc/rfc7617.html#section-2).
+
+The crate extracts metadata; it is not a complete HTTP, proxy, or authentication
+implementation. `X-Forwarded-*` and provider-specific fields are de facto or
+vendor conventions, not IETF standards. See
+[Standards and compatibility](https://github.com/nivek-ph/http-extract/blob/main/docs/standards.md)
+for the exact support boundary.
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE)); or
+- MIT License ([LICENSE-MIT](LICENSE-MIT)).
+
+at your option.

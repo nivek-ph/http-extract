@@ -62,4 +62,4 @@ broader runtime compatibility is implied.
 Default features enable all documented extraction API families. Consumers using
 `default-features = false` can select only the features they need. The exact
 feature list, dependency relationships, and copyable configuration are in
-[Cargo features](features.md).
+[Features](features.md).
