@@ -84,9 +84,7 @@ fn parse_forwarded_element_for(element: &str) -> Result<IpAddr, Error> {
         if parameter.is_empty() {
             return Err(invalid());
         }
-        let Some((name, value)) = parameter.split_once('=') else {
-            continue;
-        };
+        let (name, value) = parameter.split_once('=').ok_or_else(invalid)?;
         if !trim_ows(name).eq_ignore_ascii_case("for") {
             continue;
         }
@@ -287,7 +285,7 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(
             &FORWARDED,
-            "for=52.159.243.17;host=example.vercel.app;proto=https;broken;sig=c2lnbmF0dXJlCg==;exp=1786417338"
+            "for=52.159.243.17;host=example.vercel.app;proto=https;sig=c2lnbmF0dXJlCg==;exp=1786417338"
                 .parse()
                 .unwrap(),
         );
@@ -341,6 +339,7 @@ mod tests {
             "for=192.0.2.1:443",
             "for=\"[not-an-ip]\"",
             "for=192.0.2.1;for=198.51.100.2",
+            "for=192.0.2.1;broken",
             "for=192.0.2.1;proto=\"unterminated",
         ] {
             let mut headers = HeaderMap::new();
