@@ -1,4 +1,4 @@
-//! Focused extraction of untrusted client IP assertions from `Forwarded`.
+//! Strict extraction of untrusted client IP assertions from `Forwarded`.
 //!
 //! [`extract_header_forwarded_for`] implements the crate's deliberately narrow
 //! use of the standardized field: every field element must contain a usable
@@ -32,16 +32,15 @@ pub const FORWARDED: HeaderName = HeaderName::from_static("forwarded");
 ///
 /// Addresses are returned in wire order, from the remotest assertion to the
 /// one nearest the server. A missing field returns `None`; an empty field is
-/// invalid. Parsing does not make any address trustworthy. This crate's focused
+/// invalid. Parsing does not make any address trustworthy. This crate's strict
 /// profile requires exactly one field line and exactly one usable IP `for=`
 /// parameter in every element. Duplicate or non-text field lines, malformed
-/// element structure, missing `for`, duplicate parameters, and unknown,
-/// obfuscated, or non-IP nodes return an error. They are never skipped because
-/// doing so would change the chain's meaning. Values of parameters other than
-/// `for` are ignored after their names and element boundaries are identified;
-/// this accommodates provider extensions without treating them as part of the
-/// client-IP contract. Establish an out-of-band proxy trust policy before using
-/// the chain for a security decision.
+/// syntax, missing `for`, duplicate parameters, and unknown, obfuscated, or
+/// non-IP nodes return an error. They are never skipped because doing so would
+/// change the chain's meaning. Other parameters accept `=` in unquoted values
+/// for compatibility with provider extensions that carry padded encodings.
+/// Establish an out-of-band proxy trust policy before using the chain for a
+/// security decision.
 pub fn extract_header_forwarded_for(headers: &HeaderMap) -> Result<Option<Vec<IpAddr>>, Error> {
     extract_single_header_text(headers, &FORWARDED)?
         .map(parse_forwarded_for)
@@ -98,8 +97,8 @@ fn parse_forwarded_element_for(element: &str) -> Result<IpAddr, Error> {
             return Err(invalid());
         }
 
+        let (value, quoted) = parse_parameter_value(value)?;
         if name == "for" {
-            let (value, quoted) = parse_parameter_value(value)?;
             forwarded_for = Some(parse_forwarded_node(&value, quoted)?);
         }
     }
@@ -179,7 +178,11 @@ fn split_quoted(value: &str, delimiter: char) -> Result<Vec<&str>, Error> {
 fn parse_parameter_value(value: &str) -> Result<(String, bool), Error> {
     let value = trim_ows(value);
     if !value.starts_with('"') {
-        if value.is_empty() || !value.bytes().all(is_token_byte) {
+        if value.is_empty()
+            || !value
+                .bytes()
+                .all(|byte| is_token_byte(byte) || byte == b'=')
+        {
             return Err(invalid());
         }
         return Ok((value.to_owned(), false));
@@ -289,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn extracts_for_ip_when_an_ignored_extension_has_a_non_token_value() {
+    fn extracts_for_ip_when_an_extension_uses_base64_padding() {
         let mut headers = HeaderMap::new();
         headers.insert(
             &FORWARDED,
