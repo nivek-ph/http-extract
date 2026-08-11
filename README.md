@@ -37,27 +37,27 @@ Header functions contain the parsing logic. Matching Request functions are
 convenience wrappers over `request.headers()`:
 
 ```rust
-use http::Request;
-use http_extract::{extract_request_authority, extract_request_content_type};
+use http_extract::{HeaderName, Request, extract_single_header_text};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let name = HeaderName::from_static("x-example");
     let request = Request::builder()
         .uri("https://example.com/items")
-        .header("content-type", "application/json")
+        .header(name.clone(), "metadata")
         .body(())?;
 
     assert_eq!(
-        extract_request_authority(&request)?.unwrap().as_str(),
-        "example.com"
-    );
-    assert_eq!(
-        extract_request_content_type(&request)?.unwrap().essence_str(),
-        "application/json"
+        extract_single_header_text(request.headers(), &name)?,
+        Some("metadata")
     );
 
     Ok(())
 }
 ```
+
+Feature-specific Header and Request pairs follow the same direct shape. See the
+[Features guide](https://github.com/nivek-ph/http-extract/blob/main/docs/features.md)
+for the complete API families.
 
 For a smaller dependency surface, disable defaults and select only what the
 application uses:
