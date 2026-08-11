@@ -34,12 +34,13 @@ pub const FORWARDED: HeaderName = HeaderName::from_static("forwarded");
 /// one nearest the server. A missing field returns `None`; an empty field is
 /// invalid. Parsing does not make any address trustworthy. This crate's strict
 /// profile requires exactly one field line and exactly one usable IP `for=`
-/// parameter in every element. Duplicate or non-text field lines, malformed
-/// syntax, missing or duplicate `for` parameters, and unknown, obfuscated, or
-/// non-IP `for` nodes return an error. They are never skipped because doing so
-/// would change the chain's meaning. Parameters other than `for` are ignored.
-/// Establish an out-of-band proxy trust policy before using the chain for a
-/// security decision.
+/// parameter in every element. Duplicate or non-text field lines, ambiguous
+/// element boundaries, missing or duplicate `for` parameters, and unknown,
+/// obfuscated, or non-IP `for` nodes return an error. They are never skipped
+/// because doing so would change the chain's meaning. Parameters other than
+/// `for` are ignored without validating their names or values. Establish an
+/// out-of-band proxy trust policy before using the chain for a security
+/// decision.
 pub fn extract_header_forwarded_for(headers: &HeaderMap) -> Result<Option<Vec<IpAddr>>, Error> {
     extract_single_header_text(headers, &FORWARDED)?
         .map(parse_forwarded_for)
@@ -84,7 +85,9 @@ fn parse_forwarded_element_for(element: &str) -> Result<IpAddr, Error> {
         if parameter.is_empty() {
             return Err(invalid());
         }
-        let (name, value) = parameter.split_once('=').ok_or_else(invalid)?;
+        let Some((name, value)) = parameter.split_once('=') else {
+            continue;
+        };
         if !trim_ows(name).eq_ignore_ascii_case("for") {
             continue;
         }
@@ -297,6 +300,23 @@ mod tests {
     }
 
     #[test]
+    fn ignores_malformed_parameters_other_than_for() {
+        for parameter in ["broken", "=value", "bad name=value", "proto="] {
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                &FORWARDED,
+                format!("for=192.0.2.1;{parameter}").parse().unwrap(),
+            );
+
+            assert_eq!(
+                extract_header_forwarded_for(&headers).unwrap().unwrap(),
+                vec!["192.0.2.1".parse::<IpAddr>().unwrap()],
+                "unexpectedly rejected {parameter:?}"
+            );
+        }
+    }
+
+    #[test]
     fn request_entry_point_delegates_to_headers() {
         let request = Request::builder()
             .header(&FORWARDED, "for=192.0.2.1")
@@ -339,7 +359,6 @@ mod tests {
             "for=192.0.2.1:443",
             "for=\"[not-an-ip]\"",
             "for=192.0.2.1;for=198.51.100.2",
-            "for=192.0.2.1;broken",
             "for=192.0.2.1;proto=\"unterminated",
         ] {
             let mut headers = HeaderMap::new();
