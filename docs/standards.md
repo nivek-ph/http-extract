@@ -24,8 +24,10 @@ protocol conformance.
   [Section 6.1](https://www.rfc-editor.org/rfc/rfc7239.html#section-6.1).
   `extract_header_forwarded_for` returns a continuous IP chain and rejects
   missing, unknown, obfuscated, or non-IP nodes instead of skipping them. It
-  does not implement the full Forwarded object model. Parsing and Header-based
-  selection do not establish trust; deployments must account for the
+  ignores parameters other than `for` after quote-aware element splitting
+  without validating their names or values, and does not implement the full
+  Forwarded object model. Parsing and Header-based selection do not establish
+  trust; deployments must account for the
   [Section 8](https://www.rfc-editor.org/rfc/rfc7239.html#section-8) security
   considerations independently.
 - [Bearer Token Usage, RFC 6750 Section 2.1](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1):

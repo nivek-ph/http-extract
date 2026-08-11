@@ -96,8 +96,11 @@ provider client-IP fields ───────── raw Header assertion
 3. `X-Real-IP`;
 4. `CF-Connecting-IP`.
 
-That order is a library convention, not an RFC-defined trust policy. A malformed
-first-present source fails instead of silently falling through.
+That order is a library convention, not an RFC-defined trust policy. If a
+first-present source has an invalid supported value, extraction fails instead of
+silently falling through. For `Forwarded`, parameters other than `for` are
+ignored after quote-aware element splitting; their names and values are not
+validated.
 `extract_client_ip_with_headers` accepts an explicit ordered source list.
 
 `extract_socket_ip` never reads Headers. `extract_proxy_client_ip` uses the

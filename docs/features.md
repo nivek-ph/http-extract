@@ -11,7 +11,7 @@ parsing implementation; matching Request functions delegate through
 
 ## Feature and API reference
 
-| Cargo feature | Adds | Main APIs | Result |
+| Cargo feature | Adds | Main APIs | Success value |
 | --- | --- | --- | --- |
 | `api-key` | `X-API-Key`, then `Api-Key` extraction | `extract_header_api_key`, `extract_request_api_key` | `Option<&str>` |
 | `authority` | URI authority and strict `Host` extraction | `extract_header_authority`, `extract_request_authority` | `Option<Authority>` |

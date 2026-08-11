@@ -25,8 +25,7 @@ Header functions contain the parsing logic. Request functions are convenience
 wrappers that only delegate through `request.headers()`:
 
 ```rust
-use http::Request;
-use http_extract::{extract_request_authority, extract_request_content_type};
+use http_extract::{Request, extract_request_authority, extract_request_content_type};
 
 let request = Request::builder()
     .uri("https://example.com/items")

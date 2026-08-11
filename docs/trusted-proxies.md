@@ -41,7 +41,9 @@ the desired fact.
 
 `extract_header_forwarded_for` remains deliberately strict: the field must be
 singular and every element must contain a usable IP `for=` value. Missing,
-unknown, obfuscated, and non-IP nodes fail rather than being skipped. See
+unknown, obfuscated, and non-IP nodes fail rather than being skipped.
+Parameters other than `for` are ignored after quote-aware element splitting;
+their names and values are not validated. See
 [RFC 7239 Section 5.2](https://www.rfc-editor.org/rfc/rfc7239.html#section-5.2)
 and its
 [Section 8 security considerations](https://www.rfc-editor.org/rfc/rfc7239.html#section-8).
